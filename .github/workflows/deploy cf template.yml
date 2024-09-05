@@ -21,4 +21,4 @@ jobs:
           aws-region: eu-central-1
 
       - name: Deploy CloudFormation
-        run: aws cloudformation deploy --template-file Reassure environment template.yaml --stack-name Townhall-Demo --parameter-overrides ApplicationName=Townhall-Demo --capabilities CAPABILITY_IAM
+        run: aws cloudformation deploy --template-file 'Reassure environment template.yaml' --stack-name Townhall-Demo --parameter-overrides ApplicationName=Townhall-Demo --capabilities CAPABILITY_IAM
