@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template for creating SQS queues, S3 bucket,
+  CloudWatch Log Group, Secrets, IAM User, and Policies
+
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: Name of the application used for naming resources and tags
+
+Resources:
+  SQSJobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub sbq-jobs-${ApplicationName}
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  SQSEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub sbq-events-${ApplicationName}
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /${ApplicationName}
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  SGBaseIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: sg-0c38f1bb8993ac962
+      IpProtocol: tcp
+      FromPort: 1433
+      ToPort: 1433
+      CidrIp: 0.0.0.0/0
+  MyDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: false
+      AutoMinorVersionUpgrade: false
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      DBInstanceClass: db.t3.small
+      Engine: sqlserver-ex
+      LicenseModel: license-included
+      MasterUsername: ReassureDbUser
+      MasterUserPassword: !Join
+        - ''
+        - - '{{resolve:secretsmanager:'
+          - !Ref SecretEnvVariable
+          - ':SecretString:DatabaseMasterPassword}}'
+      MultiAZ: false
+      MonitoringInterval: 0
+      PubliclyAccessible: true
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${AWS::StackName}-${Name}
+            - Name: sqlserver-ex
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  SecretEnvVariable:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ApplicationName}-env
+      Description: !Sub Secrets for ${ApplicationName} environment
+      GenerateSecretString:
+        SecretStringTemplate: '{}'
+        GenerateStringKey: DatabaseMasterPassword
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  IAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub ${ApplicationName}-mi
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  IAMUserAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref IAMUser
+
+  IAMUserPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${ApplicationName}-mi-access-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: secretsmanager:GetSecretValue
+            Resource: !Sub arn:aws:secretsmanager:eu-central-1:${AWS::AccountId}:secret:${ApplicationName}-env-*
+          - Effect: Allow
+            Action:
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - logs:PutLogEvents
+              - logs:CreateLogStream
+            Resource:
+              - !GetAtt SQSJobsQueue.Arn
+              - !GetAtt SQSEventsQueue.Arn
+              - !GetAtt CloudWatchLogGroup.Arn
+      Users:
+        - !Ref IAMUser
+
+  IAMUserAccessKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub ${ApplicationName}
+      Description: !Sub Secret for IAM Access Key of ${ApplicationName}
+      SecretString: !Sub '{"AccessKey":"${IAMUserAccessKey}","SecretKey":"${IAMUserAccessKey.SecretAccessKey}"}'
+      Tags:
+        - Key: ApplicationName
+          Value: !Ref ApplicationName
+
+  MyResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name: !Sub rg-${ApplicationName}
+      ResourceQuery:
+        Type: TAG_FILTERS_1_0
+        Query:
+          ResourceTypeFilters:
+            - AWS::AllSupported
+          TagFilters:
+            - Key: ApplicationName
+              Values:
+                - !Ref ApplicationName
+
+Outputs:
+  SQSJobsQueueURL:
+    Description: URL of the SQS Jobs Queue
+    Value: !Ref SQSJobsQueue
+    Export:
+      Name: !Sub ${ApplicationName}-SQSJobsQueueURL
+
+  SQSEventsQueueURL:
+    Description: URL of the SQS Events Queue
+    Value: !Ref SQSEventsQueue
+    Export:
+      Name: !Sub ${ApplicationName}-SQSEventsQueueURL
+
+  CloudWatchLogGroupName:
+    Description: Name of the CloudWatch Log Group
+    Value: !Ref CloudWatchLogGroup
+    Export:
+      Name: !Sub ${ApplicationName}-CloudWatchLogGroupName
+
+  SecretEnvVariableName:
+    Description: Name of the Secret for environment variables
+    Value: !Ref SecretEnvVariable
+    Export:
+      Name: !Sub ${ApplicationName}-SecretEnvVariableName
+
+  IAMUserName:
+    Description: Name of the IAM User
+    Value: !Ref IAMUser
+    Export:
+      Name: !Sub ${ApplicationName}-IAMUserName
