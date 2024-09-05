@@ -32,42 +32,42 @@ Resources:
         - Key: ApplicationName
           Value: !Ref ApplicationName
 
-  SGBaseIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: sg-0c38f1bb8993ac962
-      IpProtocol: tcp
-      FromPort: 1433
-      ToPort: 1433
-      CidrIp: 0.0.0.0/0
-  MyDB:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      AllocatedStorage: 20
-      AllowMajorVersionUpgrade: false
-      AutoMinorVersionUpgrade: false
-      BackupRetentionPeriod: 7
-      CopyTagsToSnapshot: true
-      DBInstanceClass: db.t3.small
-      Engine: sqlserver-ex
-      LicenseModel: license-included
-      MasterUsername: ReassureDbUser
-      MasterUserPassword: !Join
-        - ''
-        - - '{{resolve:secretsmanager:'
-          - !Ref SecretEnvVariable
-          - ':SecretString:DatabaseMasterPassword}}'
-      MultiAZ: false
-      MonitoringInterval: 0
-      PubliclyAccessible: true
-      StorageType: gp2
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - ${AWS::StackName}-${Name}
-            - Name: sqlserver-ex
-        - Key: ApplicationName
-          Value: !Ref ApplicationName
+  # SGBaseIngress:
+  #   Type: AWS::EC2::SecurityGroupIngress
+  #   Properties:
+  #     GroupId: sg-0c38f1bb8993ac962
+  #     IpProtocol: tcp
+  #     FromPort: 1433
+  #     ToPort: 1433
+  #     CidrIp: 0.0.0.0/0
+  # MyDB:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     AllocatedStorage: 20
+  #     AllowMajorVersionUpgrade: false
+  #     AutoMinorVersionUpgrade: false
+  #     BackupRetentionPeriod: 7
+  #     CopyTagsToSnapshot: true
+  #     DBInstanceClass: db.t3.small
+  #     Engine: sqlserver-ex
+  #     LicenseModel: license-included
+  #     MasterUsername: ReassureDbUser
+  #     MasterUserPassword: !Join
+  #       - ''
+  #       - - '{{resolve:secretsmanager:'
+  #         - !Ref SecretEnvVariable
+  #         - ':SecretString:DatabaseMasterPassword}}'
+  #     MultiAZ: false
+  #     MonitoringInterval: 0
+  #     PubliclyAccessible: true
+  #     StorageType: gp2
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Sub
+  #           - ${AWS::StackName}-${Name}
+  #           - Name: sqlserver-ex
+  #       - Key: ApplicationName
+  #         Value: !Ref ApplicationName
 
   SecretEnvVariable:
     Type: AWS::SecretsManager::Secret
