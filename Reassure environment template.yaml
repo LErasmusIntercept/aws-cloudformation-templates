@@ -125,7 +125,7 @@ Resources:
     Properties:
       Name: !Sub ${ApplicationName}
       Description: !Sub Secret for IAM Access Key of ${ApplicationName}
-      SecretString: !Sub '{"AccessKey":"${IAMUserAccessKey}","SecretKey":"${IAMUserAccessKey.SecretAccessKey}","SqsJobQueueUrl":"${SQSJobsQueue}"}'
+      SecretString: !Sub '{"AccessKey":"${IAMUserAccessKey}","SecretKey":"${IAMUserAccessKey.SecretAccessKey}"}'
       Tags:
         - Key: ApplicationName
           Value: !Ref ApplicationName
