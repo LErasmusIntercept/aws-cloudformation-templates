@@ -145,30 +145,6 @@ Resources:
                 - !Ref ApplicationName
 
 Outputs:
-  SQSJobsQueueURL:
-    Description: URL of the SQS Jobs Queue
-    Value: !Ref SQSJobsQueue
-    Export:
-      Name: !Sub ${ApplicationName}-SQSJobsQueueURL
-
-  SQSEventsQueueURL:
-    Description: URL of the SQS Events Queue
-    Value: !Ref SQSEventsQueue
-    Export:
-      Name: !Sub ${ApplicationName}-SQSEventsQueueURL
-
-  CloudWatchLogGroupName:
-    Description: Name of the CloudWatch Log Group
-    Value: !Ref CloudWatchLogGroup
-    Export:
-      Name: !Sub ${ApplicationName}-CloudWatchLogGroupName
-
-  SecretEnvVariableName:
-    Description: Name of the Secret for environment variables
-    Value: !Ref SecretEnvVariable
-    Export:
-      Name: !Sub ${ApplicationName}-SecretEnvVariableName
-
   IAMUserName:
     Description: Name of the IAM User
     Value: !Ref IAMUser
