@@ -50,11 +50,10 @@ jobs:
         id: get_user_arn
         run: |
           USERNAME="${{ github.event.inputs.name }}"
-          INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
+          IDENTITY_STORE_ID="${{ secrets.AWS_IDENTITY_STORE_ID }}"
 
           # List users and filter by email
-          USER_ARN=$(aws sso-admin list-users \
-            --instance-arn "$INSTANCE_ARN" \
+          USER_ARN=$(aws identitystore list-users --identity-store-id "$IDENTITY_STORE_ID" \
             --query "Users[?Email=='$USERNAME'].UserId" \
             --output text)
 
