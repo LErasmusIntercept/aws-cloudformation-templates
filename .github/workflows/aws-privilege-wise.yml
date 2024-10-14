@@ -54,7 +54,7 @@ jobs:
 
           # List users and filter by email
           USER_ARN=$(aws identitystore list-users --identity-store-id "$IDENTITY_STORE_ID" \
-            --query "Users[?Email=='$USERNAME'].UserId" \
+            --query "Users[?UserName=='$USERNAME'].UserId" \
             --output text)
 
           if [ -z "$USER_ARN" ]; then
