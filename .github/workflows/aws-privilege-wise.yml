@@ -8,13 +8,27 @@ on:
         required: true
         default: 'example@intercept.cloud'
       environment:
-        description: 'Choose the environment'
+        description: 'Choose your type of Access'
         required: true
         type: choice
         options: 
           - Development
-          - Production
+          - Acceptance Data
+          - Production Data
+          - Acceptance (Read-Only)
+          - Production (Read-Only)
         default: 'Development'
+      duration:
+        description: 'Number of hours to grant access'
+        required: true
+        type: choice
+        options: 
+          - '1'
+          - '2'
+          - '4'
+          - '6'
+          - '8'
+        default: '1'
 
 jobs:
   build:
