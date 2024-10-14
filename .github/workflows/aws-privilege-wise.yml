@@ -75,6 +75,7 @@ jobs:
 
       # Create AWS Permission Set
       - name: Create AWS Permission Set
+        id: create_aws_permission_set
         run: |
           INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
           SESSION_DURATION=$(cat session_duration.txt)
@@ -102,7 +103,7 @@ jobs:
       - name: Attach Managed Policies to Permission Set
         run: |
           INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
-          PERMISSION_SET_ARN="${{ steps.create_permission_set.outputs.permission_set_arn }}"
+          PERMISSION_SET_ARN="${{ steps.create_aws_permission_set.outputs.permission_set_arn }}"
 
           if [[ "${{ github.event.inputs.environment }}" == "Development" ]]; then
             POLICY_ARN="arn:aws:iam::aws:policy/AdministratorAccess"
