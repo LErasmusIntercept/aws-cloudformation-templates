@@ -1,4 +1,4 @@
-name: Elevate Aws Access with Approvals
+name: Create AWS Permission Set
 
 on:
   workflow_dispatch:
@@ -31,10 +31,105 @@ on:
         default: '1'
 
 jobs:
-  build:
+  create-permission-set:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Print Input Values
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Retrieve the user ARN based on the provided username
+      - name: Retrieve User ARN
+        id: get_user_arn
         run: |
-          echo "Name: ${{ github.event.inputs.name }}"
-          echo "Environment: ${{ github.event.inputs.environment }}"
+          USERNAME="${{ github.event.inputs.name }}"
+          INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
+
+          # List users and filter by email
+          USER_ARN=$(aws sso-admin list-users \
+            --instance-arn "$INSTANCE_ARN" \
+            --query "Users[?Email=='$USERNAME'].UserId" \
+            --output text)
+
+          if [ -z "$USER_ARN" ]; then
+            echo "Error: User not found."
+            exit 1
+          fi
+
+          echo "User ARN: $USER_ARN"
+          echo "::set-output name=user_arn::$USER_ARN"
+
+      # Create session-duration in ISO 8601 format based on input duration
+      - name: Construct Session Duration
+        id: session_duration
+        run: |
+          DURATION=${{ github.event.inputs.duration }}
+          echo "PT${DURATION}H" > session_duration.txt
+          cat session_duration.txt
+
+      # Create AWS Permission Set
+      - name: Create AWS Permission Set
+        run: |
+          INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
+          SESSION_DURATION=$(cat session_duration.txt)
+          ENVIRONMENT="${{ github.event.inputs.environment }}"
+
+          # Create the permission set
+          PERMISSION_SET_ARN=$(aws sso-admin create-permission-set \
+            --instance-arn "$INSTANCE_ARN" \
+            --name "$ENVIRONMENT Access" \
+            --description "Permission set for $ENVIRONMENT" \
+            --session-duration "$SESSION_DURATION" \
+            --relay-state "https://aws.amazon.com" \
+            --tags Key=Environment,Value=$ENVIRONMENT \
+            --query 'PermissionSet.PermissionSetArn' \
+            --output text)
+
+          if [ -z "$PERMISSION_SET_ARN" ]; then
+            echo "Error: Failed to create permission set."
+            exit 1
+          fi
+
+          echo "Created Permission Set ARN: $PERMISSION_SET_ARN"
+          echo "::set-output name=permission_set_arn::$PERMISSION_SET_ARN"
+
+      # Attach Managed Policies based on the environment input
+      - name: Attach Managed Policies to Permission Set
+        run: |
+          INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
+          PERMISSION_SET_ARN="${{ steps.create_permission_set.outputs.permission_set_arn }}"
+
+          if [[ "${{ github.event.inputs.environment }}" == "Development" ]]; then
+            POLICY_ARN="arn:aws:iam::aws:policy/AdministratorAccess"
+          elif [[ "${{ github.event.inputs.environment }}" == "Acceptance Data" || "${{ github.event.inputs.environment }}" == "Production Data" ]]; then
+            POLICY_ARN="arn:aws:iam::aws:policy/PowerUserAccess"
+          elif [[ "${{ github.event.inputs.environment }}" == *"Read-Only"* ]]; then
+            POLICY_ARN="arn:aws:iam::aws:policy/ReadOnlyAccess"
+          fi
+
+          aws sso-admin attach-managed-policy-to-permission-set \
+            --instance-arn "$INSTANCE_ARN" \
+            --permission-set-arn "$PERMISSION_SET_ARN" \
+            --managed-policy-arn "$POLICY_ARN"
+
+      # Assign the permission set to the retrieved user
+      - name: Assign Permission Set to User
+        run: |
+          INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
+          USER_ARN="${{ steps.get_user_arn.outputs.user_arn }}"
+          PERMISSION_SET_ARN="${{ steps.create_permission_set.outputs.permission_set_arn }}"
+          ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
+
+          aws sso-admin create-account-assignment \
+            --instance-arn "$INSTANCE_ARN" \
+            --permission-set-arn "$PERMISSION_SET_ARN" \
+            --principal-type USER \
+            --principal-id "$USER_ARN" \
+            --account-id "$ACCOUNT_ID"
