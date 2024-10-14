@@ -1,4 +1,4 @@
-name: Manual Workflow Dispatch with Inputs
+name: Elevate Aws Access with Approvals
 
 on:
   workflow_dispatch:
