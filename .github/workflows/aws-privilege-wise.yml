@@ -123,7 +123,7 @@ jobs:
         run: |
           INSTANCE_ARN="${{ secrets.AWS_SSO_INSTANCE_ARN }}"
           USER_ARN="${{ steps.get_user_arn.outputs.user_arn }}"
-          PERMISSION_SET_ARN="${{ steps.create_permission_set.outputs.permission_set_arn }}"
+          PERMISSION_SET_ARN="${{ steps.create_aws_permission_set.outputs.permission_set_arn }}"
           ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
 
           aws sso-admin create-account-assignment \
