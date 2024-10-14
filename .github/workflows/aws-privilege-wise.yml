@@ -131,4 +131,5 @@ jobs:
             --permission-set-arn "$PERMISSION_SET_ARN" \
             --principal-type USER \
             --principal-id "$USER_ARN" \
-            --account-id "$ACCOUNT_ID"
+            --target-id "$ACCOUNT_ID" \
+            --target-type "AWS_ACCOUNT"
