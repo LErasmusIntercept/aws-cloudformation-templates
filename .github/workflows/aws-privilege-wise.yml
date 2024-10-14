@@ -83,11 +83,10 @@ jobs:
           # Create the permission set
           PERMISSION_SET_ARN=$(aws sso-admin create-permission-set \
             --instance-arn "$INSTANCE_ARN" \
-            --name "$ENVIRONMENT Access" \
+            --name "Elevated_Access_Test" \
             --description "Permission set for $ENVIRONMENT" \
             --session-duration "$SESSION_DURATION" \
             --relay-state "https://aws.amazon.com" \
-            --tags Key=Environment,Value=$ENVIRONMENT \
             --query 'PermissionSet.PermissionSetArn' \
             --output text)
 
