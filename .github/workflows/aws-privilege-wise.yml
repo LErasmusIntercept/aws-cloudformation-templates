@@ -1,0 +1,26 @@
+name: Manual Workflow Dispatch with Inputs
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Username'
+        required: true
+        default: 'example@intercept.cloud'
+      environment:
+        description: 'Choose the environment'
+        required: true
+        type: choice
+        options: 
+          - Development
+          - Production
+        default: 'Development'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Input Values
+        run: |
+          echo "Name: ${{ github.event.inputs.name }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
